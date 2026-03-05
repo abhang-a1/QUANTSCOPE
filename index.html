@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantScope AI - Dashboard</title>
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     NAVBAR
+══════════════════════════════════════════════ -->
+<nav class="navbar">
+    <div class="nav-left">
+        <span class="qs-logo" aria-label="QuantScope logo" role="img" style="margin-right:10px;display:flex;align-items:center;">
+  <svg width="28" height="28" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="qsG" x1="2" y1="2" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#A855F7"/>
+        <stop offset="1" stop-color="#6366F1"/>
+      </linearGradient>
+    </defs>
+    <path d="M11 2.25c4.832 0 8.75 3.918 8.75 8.75S15.832 19.75 11 19.75 2.25 15.832 2.25 11 6.168 2.25 11 2.25Z" stroke="url(#qsG)" stroke-width="1.8"/>
+    <path d="M7 12.2c1.35-2.7 2.9-4.1 4.7-4.1 1.35 0 2.45.75 3.3 2.25" stroke="url(#qsG)" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M14.6 13.2c-.9 1.9-2.2 2.85-3.9 2.85-1.3 0-2.4-.55-3.3-1.65" stroke="url(#qsG)" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>
+</span>
+        <span class="logo-text">QuantScope AI</span>
+        <span class="version-badge">v2.1</span>
+    </div>
+    <div class="nav-center">
+        <div class="search-container">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input id="tickerSearch" class="search-input" type="text"
+                   placeholder="Search ticker... e.g. AAPL, RELIANCE.NS, BTC-USD"
+                   value="AAPL">
+        </div>
+        <button class="btn-primary" id="btnAnalyze">Analyze</button>
+    </div>
+    <div class="nav-right">
+        <button id="themeToggleBtn" title="Toggle Light/Dark Theme">
+            <i class="fa-solid fa-moon" id="themeIcon"></i>
+        </button>
+        <div class="status-dot" id="systemStatusDot" title="Checking system status..."></div>
+        <div class="user-profile" id="userProfileBtn">
+            <div class="avatar" id="userAvatar">--</div>
+            <span id="userName">Loading...</span>
+            <i class="fa-solid fa-chevron-down text-muted" style="font-size:.75rem;"></i>
+        </div>
+        <div class="dropdown-menu" id="userDropdown">
+            <div class="dropdown-item text-red" id="btnSignOut">Sign Out</div>
+        </div>
+    </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════════ -->
+<aside class="sidebar">
+    <div class="nav-group">
+        <div class="nav-label">OVERVIEW</div>
+        <div class="nav-item active" data-target="sec-dashboard"><i class="fa-solid fa-layer-group"></i>Dashboard</div>
+    </div>
+    <div class="nav-group">
+        <div class="nav-label">MARKET DATA</div>
+        <div class="nav-item" data-target="sec-live-quote"><i class="fa-solid fa-chart-line"></i>Live Quote</div>
+        <div class="nav-item" data-target="sec-history"><i class="fa-solid fa-clock-rotate-left"></i>Price History</div>
+    </div>
+ <div class="nav-group">
+    <div class="nav-label">ANALYSIS</div>
+    <div class="nav-item" data-target="sec-tech-ind"><i class="fa-solid fa-wave-square"></i>Technical Indicators</div>
+    <div class="nav-item" data-target="sec-perf-metrics"><i class="fa-solid fa-gauge-high"></i>Performance Metrics</div>
+</div>
+
+    <div class="nav-group">
+        <div class="nav-label">AI FORECASTING</div>
+        <div class="nav-item" data-target="sec-forecast"><i class="fa-solid fa-wand-magic-sparkles"></i>Price Forecast</div>
+        <div class="nav-item" data-target="sec-ai-predict"><i class="fa-solid fa-microchip"></i>AI Predictions</div>
+    </div>
+    <div class="nav-group">
+        <div class="nav-label">OPTIONS</div>
+        <div class="nav-item" data-target="sec-options"><i class="fa-solid fa-cubes-stacked"></i>Option Pricing</div>
+    </div>
+    <div class="nav-group">
+        <div class="nav-label">SYSTEM</div>
+        <div class="nav-item" data-target="sec-system"><i class="fa-solid fa-server"></i>System Status</div>
+    </div>
+    <div class="sidebar-footer">QuantScope AI © 2026</div>
+</aside>
+
+<!-- ══════════════════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════════════════ -->
+<main class="main-content">
+
+    <!-- ══════════════════════════════════════════
+         A: DASHBOARD
+    ══════════════════════════════════════════ -->
+    <section id="sec-dashboard" class="content-section active">
+        <div class="section-header">
+            <h2 id="dash-title">Dashboard — AAPL</h2>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="grid-4">
+            <!-- Price -->
+            <div class="card">
+                <div class="kpi-icon"><i class="fa-solid fa-arrow-trend-up" id="kpi-price-icon"></i></div>
+                <div class="text-muted">Current Price</div>
+                <div class="val-large" id="kpi-price">--</div>
+                <div class="val-mono text-muted" id="kpi-change">--</div>
+            </div>
+            <!-- Sentiment -->
+            <div class="card">
+                <div class="kpi-icon"><i class="fa-solid fa-brain"></i></div>
+                <div class="text-muted">Sentiment Score</div>
+                <div class="val-large" id="kpi-sentiment">--</div>
+                <div id="kpi-sentiment-badge"></div>
+                <div class="text-muted val-mono" style="margin-top:6px;" id="kpi-predicted">AI: --</div>
+            </div>
+            <!-- 52W Range -->
+            <div class="card">
+                <div class="kpi-icon"><i class="fa-solid fa-arrows-left-right"></i></div>
+                <div class="text-muted">52W Range</div>
+                <div class="range-bar-wrap">
+                    <div class="range-bar-track">
+                        <div class="range-bar-dot" id="range-dot" style="left:50%"></div>
+                    </div>
+                </div>
+                <div class="range-bar-labels">
+                    <span id="range-low">--</span>
+                    <span id="range-high">--</span>
+                </div>
+            </div>
+            <!-- Volume -->
+            <div class="card">
+                <div class="kpi-icon"><i class="fa-solid fa-chart-column"></i></div>
+                <div class="text-muted">Trading Volume</div>
+                <div class="val-large" id="kpi-volume">--</div>
+                <div class="text-muted val-mono" id="kpi-hilo">--</div>
+            </div>
+        </div>
+
+        <!-- Price Chart -->
+        <div class="card" style="margin-bottom:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 class="card-title" style="margin:0;" id="overview-chart-title">Price History</h3>
+                <div class="pill-group" id="overview-period-group">
+                    <button class="pill-btn" data-period="5d">1W</button>
+                    <button class="pill-btn" data-period="1mo">1M</button>
+                    <button class="pill-btn" data-period="3mo">3M</button>
+                    <button class="pill-btn" data-period="6mo">6M</button>
+                    <button class="pill-btn active" data-period="1y">1Y</button>
+                    <button class="pill-btn" data-period="2y">2Y</button>
+                    <button class="pill-btn" data-period="5y">5Y</button>
+                </div>
+            </div>
+            <div style="height:420px;"><canvas id="overviewChart"></canvas></div>
+        </div>
+
+        <!-- Signals + Quick Stats -->
+        <div class="grid-2-6040">
+            <div class="card">
+                <h3 class="card-title">AI Trading Signals</h3>
+                <div id="signals-container"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div></div>
+                <div class="mini-stats-grid" id="indicators-mini-grid">
+                    <div class="mini-stat-tile"><div class="text-muted">RSI_14</div><div class="val-mono" id="m-rsi">--</div></div>
+                    <div class="mini-stat-tile"><div class="text-muted">MACD</div><div class="val-mono" id="m-macd">--</div></div>
+                    <div class="mini-stat-tile"><div class="text-muted">ADX</div><div class="val-mono" id="m-adx">--</div></div>
+                    <div class="mini-stat-tile"><div class="text-muted">ATR_14</div><div class="val-mono" id="m-atr">--</div></div>
+                    <div class="mini-stat-tile"><div class="text-muted">OBV</div><div class="val-mono" id="m-obv">--</div></div>
+                    <div class="mini-stat-tile"><div class="text-muted">MFI</div><div class="val-mono" id="m-mfi">--</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <h3 class="card-title">Performance Summary</h3>
+                <div class="mini-stats-grid-2">
+                    <div class="mini-stat-tile"><div class="text-muted">Sharpe Ratio</div><div class="val-mono" id="qs-sharpe">--</div></div>
+                    <div class="mini-stat-tile"><div class="text-muted">Sortino Ratio</div><div class="val-mono" id="qs-sortino">--</div></div>
+                    <div class="mini-stat-tile"><div class="text-muted">Max Drawdown</div><div class="val-mono text-red" id="qs-drawdown">--</div></div>
+                    <div class="mini-stat-tile"><div class="text-muted">Win Rate</div><div class="val-mono" id="qs-winrate">--</div></div>
+                    <div class="mini-stat-tile"><div class="text-muted">Volatility</div><div class="val-mono" id="qs-vol">--</div></div>
+                    <div class="mini-stat-tile"><div class="text-muted">CAGR</div><div class="val-mono" id="qs-cagr">--</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════
+         B: LIVE QUOTE
+    ══════════════════════════════════════════ -->
+    <section id="sec-live-quote" class="content-section">
+        <div class="section-header">
+            <h2>Live Quote</h2>
+            <button class="btn-primary" id="btnRefreshQuote"><i class="fa-solid fa-rotate"></i> Refresh Quote</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+            <!-- Price Detail -->
+            <div class="card">
+                <div id="lq-currency-badge" class="badge badge-blue" style="margin-bottom:16px;">USD</div>
+                <div class="val-xlarge" id="lq-price">--</div>
+                <div class="val-mono" style="font-size:1.2rem;margin-bottom:24px;" id="lq-change">--</div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;text-align:center;">
+                    <div><div class="text-muted">Prev Close</div><div class="val-mono" id="lq-prev">--</div></div>
+                    <div><div class="text-muted">Day High</div><div class="val-mono" id="lq-high">--</div></div>
+                    <div><div class="text-muted">Day Low</div><div class="val-mono" id="lq-low">--</div></div>
+                </div>
+                <div class="text-muted" style="font-size:.8rem;margin-bottom:4px;">Volume (vs avg)</div>
+                <div class="vol-bar-bg"><div class="vol-bar-fg" id="lq-vol-bar" style="width:50%;"></div></div>
+                <div style="text-align:center;padding:16px;background:var(--bg-primary);border-radius:6px;margin-top:20px;">
+                    <div class="text-muted">AI Predicted Next Price <span class="pulse-dot"></span></div>
+                    <div class="val-mono text-purple" style="font-size:1.5rem;margin-top:4px;" id="lq-predicted">--</div>
+                </div>
+            </div>
+            <!-- Company Info -->
+            <div class="card">
+                <h2 id="lq-company-name" style="font-size:1.4rem;margin-bottom:8px;">--</h2>
+                <div style="margin-bottom:16px;" id="lq-badges"></div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;text-align:center;">
+                    <div><div class="text-muted">Market Cap</div><div class="val-mono" id="lq-mktcap">--</div></div>
+                    <div><div class="text-muted">P/E Ratio</div><div class="val-mono" id="lq-pe">--</div></div>
+                    <div><div class="text-muted">Beta</div><div class="val-mono" id="lq-beta">--</div></div>
+                </div>
+                <div style="margin-bottom:12px;">
+                    <div class="text-muted">Analyst Target</div>
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:4px;">
+                        <span class="val-mono" style="font-size:1.2rem;" id="lq-target">--</span>
+                        <span id="lq-rec-badge"></span>
+                    </div>
+                </div>
+                <div class="range-bar-wrap">
+                    <div class="range-bar-track"><div class="range-bar-dot" id="lq-range-dot" style="left:50%;"></div></div>
+                </div>
+                <div class="range-bar-labels">
+                    <span id="lq-52low">--</span><span>52W Range</span><span id="lq-52high">--</span>
+                </div>
+                <hr style="border:0;border-top:1px solid var(--border-color);margin:20px 0;">
+                <a href="#" id="lq-website" target="_blank"><i class="fa-solid fa-globe"></i> Visit Website <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:.7rem;"></i></a>
+            </div>
+        </div>
+
+        <!-- News -->
+        <div class="card">
+            <h3 class="card-title">Latest News</h3>
+            <div id="news-container"><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div><div class="skeleton skeleton-text"></div></div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════
+         C: PRICE HISTORY
+    ══════════════════════════════════════════ -->
+    <section id="sec-history" class="content-section">
+        <div class="section-header"><h2>Price History</h2></div>
+        <div class="card" style="margin-bottom:24px;">
+            <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+                <div class="pill-group" id="hist-period-group">
+                    <button class="pill-btn" data-period="5d">1W</button>
+                    <button class="pill-btn" data-period="1mo">1M</button>
+                    <button class="pill-btn" data-period="3mo">3M</button>
+                    <button class="pill-btn" data-period="6mo">6M</button>
+                    <button class="pill-btn active" data-period="1y">1Y</button>
+                    <button class="pill-btn" data-period="2y">2Y</button>
+                    <button class="pill-btn" data-period="5y">5Y</button>
+                </div>
+                <div class="pill-group" id="hist-interval-group">
+                    <button class="pill-btn active" data-interval="1d">1D</button>
+                    <button class="pill-btn" data-interval="1wk">1WK</button>
+                    <button class="pill-btn" data-interval="1mo">1MO</button>
+                </div>
+                <div class="pill-group" id="hist-type-group" style="margin-left:auto;">
+                    <button class="pill-btn active" data-type="line">Line</button>
+                    <button class="pill-btn" data-type="candlestick">Candlestick</button>
+                </div>
+                <div class="pill-group" id="hist-overlay-group">
+                    <button class="pill-btn active" data-overlay="sma20">SMA 20</button>
+                    <button class="pill-btn active" data-overlay="sma50">SMA 50</button>
+                    <button class="pill-btn" data-overlay="ema12">EMA 12</button>
+                    <button class="pill-btn" data-overlay="bb">BB Bands</button>
+                </div>
+            </div>
+            <div style="height:500px;"><canvas id="histChart"></canvas></div>
+            <div style="height:120px;margin-top:8px;"><canvas id="histVolumeChart"></canvas></div>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px;text-align:center;">
+                <div><div class="text-muted">Open</div><div class="val-mono" id="hist-open">--</div></div>
+                <div><div class="text-muted">High</div><div class="val-mono" id="hist-high">--</div></div>
+                <div><div class="text-muted">Low</div><div class="val-mono" id="hist-low">--</div></div>
+                <div><div class="text-muted">Close</div><div class="val-mono" id="hist-close">--</div></div>
+                <div><div class="text-muted">Volume</div><div class="val-mono" id="hist-vol">--</div></div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3 class="card-title" style="margin:0;">Historical Data</h3>
+                <div style="display:flex;gap:8px;">
+                    <input type="date" id="hist-date-from" style="background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);padding:6px 10px;border-radius:6px;font-size:.85rem;">
+                    <input type="date" id="hist-date-to"   style="background:var(--bg-tertiary);border:1px solid var(--border-color);color:var(--text-primary);padding:6px 10px;border-radius:6px;font-size:.85rem;">
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable(0)">Date ↕</th>
+                            <th onclick="sortTable(1)">Open ↕</th>
+                            <th onclick="sortTable(2)">High ↕</th>
+                            <th onclick="sortTable(3)">Low ↕</th>
+                            <th onclick="sortTable(4)">Close ↕</th>
+                            <th onclick="sortTable(5)">Volume ↕</th>
+                            <th onclick="sortTable(6)">Change% ↕</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hist-table-body"></tbody>
+                </table>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+                <span class="text-muted" id="hist-table-info">--</span>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn-secondary" id="hist-prev-page">← Prev</button>
+                    <button class="btn-secondary" id="hist-next-page">Next →</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════
+         D: TECHNICAL INDICATORS
+    ══════════════════════════════════════════ -->
+    <section id="sec-tech-ind" class="content-section">
+        <div class="section-header"><h2>Live AI-Generated Trading Signals</h2></div>
+        <div class="card" style="margin-bottom:24px;">
+            <div id="tech-signals-container"><div class="skeleton skeleton-text"></div></div>
+        </div>
+
+        <div class="gauge-row">
+            <div class="gauge-card">
+                <div class="gauge-circle" id="gauge-rsi-circle">--</div>
+                <div class="text-muted">RSI 14</div>
+                <div id="gauge-rsi-label" class="badge badge-gray" style="margin-top:4px;">--</div>
+            </div>
+            <div class="gauge-card">
+                <div class="gauge-circle" id="gauge-macd-circle">--</div>
+                <div class="text-muted">MACD</div>
+                <div id="gauge-macd-hist" style="margin-top:4px;height:6px;border-radius:3px;width:60px;margin-left:auto;margin-right:auto;"></div>
+            </div>
+            <div class="gauge-card">
+                <div class="gauge-circle" id="gauge-mfi-circle" style="border-top-color:var(--accent-cyan);">--</div>
+                <div class="text-muted">MFI</div>
+                <div id="gauge-mfi-label" class="badge badge-gray" style="margin-top:4px;">--</div>
+            </div>
+            <div class="gauge-card">
+                <div class="gauge-circle" id="gauge-adx-circle">--</div>
+                <div class="text-muted">ADX</div>
+                <div id="gauge-adx-label" class="badge badge-gray" style="margin-top:4px;">--</div>
+            </div>
+            <div class="gauge-card">
+                <div class="gauge-circle" style="border-top-color:var(--border-color);" id="gauge-atr-circle">--</div>
+                <div class="text-muted">ATR 14</div>
+                <div class="text-muted" style="font-size:.75rem;margin-top:4px;">Avg True Range</div>
+            </div>
+        </div>
+
+        <!-- Stacked Indicator Charts -->
+        <div class="card">
+            <h3 class="card-title">Indicator Charts (6 months)</h3>
+            <div style="height:300px;margin-bottom:16px;"><canvas id="techPriceChart"></canvas></div>
+            <div style="height:180px;margin-bottom:16px;"><canvas id="techRsiChart"></canvas></div>
+            <div style="height:180px;"><canvas id="techMacdChart"></canvas></div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════
+         E: PERFORMANCE METRICS
+    ══════════════════════════════════════════ -->
+    <section id="sec-perf-metrics" class="content-section">
+        <div class="section-header"><h2>Performance Metrics</h2></div>
+
+        <div class="grid-3">
+            <div class="card">
+                <h3 class="card-title">Returns</h3>
+                <div style="margin-bottom:12px;"><div class="text-muted">Total Return</div><div class="val-mono" id="pm-total-return">--</div></div>
+                <div style="margin-bottom:12px;"><div class="text-muted">Annualized Return</div><div class="val-mono" id="pm-ann-return">--</div></div>
+                <div style="margin-bottom:12px;"><div class="text-muted">CAGR</div><div class="val-mono" id="pm-cagr">--</div></div>
+            </div>
+            <div class="card">
+                <h3 class="card-title">Risk Metrics</h3>
+                <div style="margin-bottom:12px;"><div class="text-muted">Volatility (Annual)</div><div class="val-mono" id="pm-vol">--</div></div>
+                <div style="margin-bottom:12px;"><div class="text-muted">Downside Volatility</div><div class="val-mono" id="pm-down-vol">--</div></div>
+                <div style="margin-bottom:12px;"><div class="text-muted">Max Drawdown</div><div class="val-mono text-red" id="pm-max-dd">--</div></div>
+                <div><div class="text-muted">Avg Drawdown</div><div class="val-mono text-red" id="pm-avg-dd">--</div></div>
+            </div>
+            <div class="card">
+                <h3 class="card-title">Risk-Adjusted Returns</h3>
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span class="text-muted">Sharpe Ratio</span><span class="val-mono" id="pm-sharpe">--</span></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span class="text-muted">Sortino Ratio</span><span class="val-mono" id="pm-sortino">--</span></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span class="text-muted">Calmar Ratio</span><span class="val-mono" id="pm-calmar">--</span></div>
+                <div style="display:flex;justify-content:space-between;"><span class="text-muted">Information Ratio</span><span class="val-mono" id="pm-ir">--</span></div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:24px;">
+            <h3 class="card-title">Benchmark Comparison <span id="pm-bench-badge" class="badge badge-gray">--</span></h3>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+                <div><div class="text-muted">Alpha</div><div class="val-mono" id="pm-alpha">--</div></div>
+                <div><div class="text-muted">Beta</div><div class="val-mono" id="pm-beta">--</div></div>
+                <div><div class="text-muted">Tracking Error</div><div class="val-mono" id="pm-te">--</div></div>
+            </div>
+        </div>
+
+        <div class="dist-trade-grid">
+            <div class="card">
+                <h3 class="card-title">Returns Distribution</h3>
+                <div style="height:260px;"><canvas id="distChart"></canvas></div>
+                <div style="display:flex;gap:16px;margin-top:10px;font-size:.8rem;">
+                    <span class="text-muted">VaR 95%: <strong id="pm-var" class="text-red">--</strong></span>
+                    <span class="text-muted">CVaR 95%: <strong id="pm-cvar" class="text-red">--</strong></span>
+                </div>
+            </div>
+            <div class="card">
+                <h3 class="card-title">Trade Statistics</h3>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:10px;">
+                    <div style="position:relative;width:120px;height:120px;">
+                        <canvas id="winRateDonut"></canvas>
+                        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+                            <div class="val-mono text-green" id="pm-wr-center">--</div>
+                            <div class="text-muted" style="font-size:.7rem;">Win Rate</div>
+                        </div>
+                    </div>
+                    <div style="width:100%;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span class="text-muted">Profit Factor</span><span class="val-mono" id="pm-pf">--</span></div>
+                        <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span class="text-muted">Observations</span><span class="val-mono" id="pm-obs">--</span></div>
+                        <div style="display:flex;justify-content:space-between;"><span class="text-muted">Time Period</span><span class="val-mono" id="pm-years">--</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════
+         F: PRICE FORECAST
+    ══════════════════════════════════════════ -->
+    <section id="sec-forecast" class="content-section">
+        <div class="section-header"><h2>AI Price Forecast</h2></div>
+
+        <div class="card" style="margin-bottom:24px;">
+            <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:20px;">
+                <span class="text-muted">Period:</span>
+                <div class="pill-group" id="fc-period-group">
+                    <button class="pill-btn" data-period="1m">1M</button>
+                    <button class="pill-btn" data-period="3m">3M</button>
+                    <button class="pill-btn active" data-period="6m">6M</button>
+                    <button class="pill-btn" data-period="1y">1Y</button>
+                    <button class="pill-btn" data-period="2y">2Y</button>
+                    <button class="pill-btn" data-period="5y">5Y</button>
+                </div>
+                <span class="text-muted">Model:</span>
+                <div class="pill-group" id="fc-model-group">
+                    <button class="pill-btn active" data-model="auto">Auto</button>
+                    <button class="pill-btn" data-model="arima">ARIMA</button>
+                    <button class="pill-btn" data-model="lstm">LSTM</button>
+                    <button class="pill-btn" data-model="ensemble">Ensemble</button>
+                </div>
+                <button class="btn-primary" id="btnGenerateForecast" style="margin-left:auto;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Forecast
+                </button>
+            </div>
+
+            <div class="forecast-loading" id="forecast-loading">
+                <div style="font-size:1.5rem;margin-bottom:12px;"></div>
+                <div style="font-weight:600;">Training AI models on historical data...</div>
+                <div class="text-muted" style="margin-top:8px;">This may take 30-60 seconds</div>
+                <div class="skeleton skeleton-chart" style="margin-top:20px;"></div>
+            </div>
+
+            <div id="forecast-content">
+                <div class="model-banner" id="forecast-model-banner">
+                    <span>Selected Model: <strong id="fc-model-name">--</strong></span>
+                    <span>RMSE: <strong id="fc-rmse">--</strong></span>
+                    <span>Period: <strong id="fc-period-label">--</strong></span>
+                </div>
+                <div style="height:400px;margin-bottom:16px;"><canvas id="forecastChart"></canvas></div>
+
+                <!-- Forecast Table -->
+                <div style="overflow-x:auto;">
+                    <table class="data-table">
+                        <thead><tr><th>Date</th><th>Predicted Price</th><th>Change</th><th>Change%</th></tr></thead>
+                        <tbody id="forecast-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-3">
+            <div class="card" style="text-align:center;"><div style="font-size:2rem;margin-bottom:12px;"></div><h4 style="margin-bottom:8px;">ARIMA</h4><p class="text-muted" style="font-size:.85rem;">Statistical time series model. Best for short-term forecasts (1-3 months). Uses 5 autoregressive lags.</p></div>
+            <div class="card" style="text-align:center;"><div style="font-size:2rem;margin-bottom:12px;"></div><h4 style="margin-bottom:8px;">LSTM</h4><p class="text-muted" style="font-size:.85rem;">Long Short-Term Memory neural network. Captures long-range temporal patterns. Trained on 60-day lookback sequences.</p></div>
+            <div class="card" style="text-align:center;"><div style="font-size:2rem;margin-bottom:12px;"></div><h4 style="margin-bottom:8px;">Ensemble</h4><p class="text-muted" style="font-size:.85rem;">Combines ARIMA + LSTM with weighted averaging. Best for long-term forecasts (1-5 years).</p></div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════
+         G: AI PREDICTIONS
+    ══════════════════════════════════════════ -->
+    <section id="sec-ai-predict" class="content-section">
+        <h2 style="margin-bottom:6px;">QuantScope AI — Machine Learning Intelligence Engine</h2>
+        <p class="text-muted" style="margin-bottom:24px;">6 Deep Learning architectures + 4 Traditional ML models</p>
+
+        <h3 class="card-title">Deep Learning Models</h3>
+        <div class="grid-3" style="margin-bottom:24px;">
+            <div class="arch-card"><div class="arch-icon"></div><h4>RNN</h4><p class="text-muted" style="font-size:.8rem;margin-top:8px;">Basic Sequence Memory</p></div>
+            <div class="arch-card"><div class="arch-icon"></div><h4>LSTM</h4><p class="text-muted" style="font-size:.8rem;margin-top:8px;">Long-term Dependencies with Gates</p></div>
+            <div class="arch-card"><div class="arch-icon"></div><h4>GRU</h4><p class="text-muted" style="font-size:.8rem;margin-top:8px;">Efficient LSTM Variant</p></div>
+            <div class="arch-card"><div class="arch-icon"></div><h4>Transformer</h4><p class="text-muted" style="font-size:.8rem;margin-top:8px;">Self-Attention Global Context</p></div>
+            <div class="arch-card"><div class="arch-icon"></div><h4>CNN-LSTM</h4><p class="text-muted" style="font-size:.8rem;margin-top:8px;">Conv + Temporal Hybrid</p></div>
+            <div class="arch-card"><div class="arch-icon">️</div><h4>BiDir LSTM</h4><p class="text-muted" style="font-size:.8rem;margin-top:8px;">Forward + Backward Processing</p></div>
+        </div>
+
+        <h3 class="card-title">Traditional ML</h3>
+        <div class="grid-4" style="margin-bottom:24px;">
+            <div class="card" style="text-align:center;padding:14px;"><div style="font-size:1.5rem;margin-bottom:8px;"></div><h4>SVR</h4><div class="text-muted" style="font-size:.8rem;margin-top:4px;" id="aip-svr">--</div></div>
+            <div class="card" style="text-align:center;padding:14px;"><div style="font-size:1.5rem;margin-bottom:8px;"></div><h4>Random Forest</h4><div class="text-muted" style="font-size:.8rem;margin-top:4px;" id="aip-rf">--</div></div>
+            <div class="card" style="text-align:center;padding:14px;"><div style="font-size:1.5rem;margin-bottom:8px;"></div><h4>XGBoost</h4><div class="text-muted" style="font-size:.8rem;margin-top:4px;" id="aip-xgb">--</div></div>
+            <div class="card" style="text-align:center;padding:14px;"><div style="font-size:1.5rem;margin-bottom:8px;"></div><h4>LightGBM</h4><div class="text-muted" style="font-size:.8rem;margin-top:4px;" id="aip-lgbm">--</div></div>
+        </div>
+
+        <div class="card" style="margin-bottom:24px;">
+            <h3 class="card-title">Market Analysis (from ML Backend)</h3>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+                <div class="mini-stat-tile"><div class="text-muted">Beta</div><div class="val-mono" id="aip-beta">--</div></div>
+                <div class="mini-stat-tile"><div class="text-muted">Alpha</div><div class="val-mono" id="aip-alpha">--</div></div>
+                <div class="mini-stat-tile"><div class="text-muted">R-Squared</div><div class="val-mono" id="aip-r2">--</div></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 class="card-title">Feature Engineering Pipeline — 70+ Quantitative Features</h3>
+            <div style="margin-bottom:16px;">
+                <span class="feature-chip active" data-features="price"> Price Transforms</span>
+                <span class="feature-chip" data-features="osc"> Oscillators</span>
+                <span class="feature-chip" data-features="ma"> Moving Averages</span>
+                <span class="feature-chip" data-features="vol"> Volatility</span>
+                <span class="feature-chip" data-features="volume"> Volume Indicators</span>
+                <span class="feature-chip" data-features="candle">️ Candlestick Patterns</span>
+            </div>
+            <div class="feature-detail show" id="feat-price">Returns, Log Returns, Momentum (5/10/20d), Price-to-SMA ratios</div>
+            <div class="feature-detail" id="feat-osc">RSI(7,14,21), MACD, Stochastic K/D, CCI, Williams %R</div>
+            <div class="feature-detail" id="feat-ma">SMA(10/20/50/200), EMA(12/26), Golden Cross, Death Cross signals</div>
+            <div class="feature-detail" id="feat-vol">ATR(7/14), Bollinger Bands(10/20/30), Historical Volatility(10/30d), ADX</div>
+            <div class="feature-detail" id="feat-volume">OBV, MFI, VWAP, Volume Ratio, A/D Line</div>
+            <div class="feature-detail" id="feat-candle">Doji, Hammer, Shooting Star, Bullish Engulfing, Bearish Engulfing</div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════
+         H: OPTION PRICING
+    ══════════════════════════════════════════ -->
+    <section id="sec-options" class="content-section">
+        <div class="section-header"><h2>Option Pricing</h2></div>
+
+        <div class="card" style="margin-bottom:24px;">
+            <h3 class="card-title">Input Parameters</h3>
+            <div class="grid-3">
+                <div style="display:flex;justify-content:space-between;padding:8px;background:var(--bg-primary);border-radius:4px;"><span class="text-muted">Spot Price (S)</span><span class="val-mono" id="op-spot">--</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px;background:var(--bg-primary);border-radius:4px;"><span class="text-muted">Strike Price (K)</span><span class="val-mono" id="op-strike">--</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px;background:var(--bg-primary);border-radius:4px;"><span class="text-muted">Volatility (σ)</span><span class="val-mono" id="op-vol">--</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px;background:var(--bg-primary);border-radius:4px;"><span class="text-muted">Time to Expiry</span><span class="val-mono" id="op-T">--</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px;background:var(--bg-primary);border-radius:4px;"><span class="text-muted">Risk-Free Rate</span><span class="val-mono" id="op-r">--</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px;background:var(--bg-primary);border-radius:4px;"><span class="text-muted">Dividend Yield</span><span class="val-mono" id="op-q">--</span></div>
+            </div>
+        </div>
+
+        <h3 class="card-title">Pricing Methods Comparison</h3>
+        <div class="grid-2" style="margin-bottom:24px;">
+            <div class="card" style="border-top:4px solid var(--accent-green);">
+                <h3 class="card-title text-green">CALL Option</h3>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-color);padding-bottom:8px;margin-bottom:8px;"><span class="text-muted">Black-Scholes</span><span class="val-mono" id="op-call-bs">--</span></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-color);padding-bottom:8px;margin-bottom:8px;"><span class="text-muted">Monte Carlo</span><span class="val-mono" id="op-call-mc">--</span></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:16px;"><span class="text-muted">Binomial (CRR)</span><span class="val-mono" id="op-call-binom">--</span></div>
+                <div class="text-muted" style="font-size:.8rem;text-align:center;">95% CI: [<span id="op-call-ci-lo">--</span> — <span id="op-call-ci-hi">--</span>]</div>
+            </div>
+            <div class="card" style="border-top:4px solid var(--accent-red);">
+                <h3 class="card-title text-red">PUT Option</h3>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-color);padding-bottom:8px;margin-bottom:8px;"><span class="text-muted">Black-Scholes</span><span class="val-mono" id="op-put-bs">--</span></div>
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border-color);padding-bottom:8px;margin-bottom:8px;"><span class="text-muted">Monte Carlo</span><span class="val-mono" id="op-put-mc">--</span></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:16px;"><span class="text-muted">Binomial (CRR)</span><span class="val-mono" id="op-put-binom">--</span></div>
+                <div class="text-muted" style="font-size:.8rem;text-align:center;">95% CI: [<span id="op-put-ci-lo">--</span> — <span id="op-put-ci-hi">--</span>]</div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:24px;">
+            <h3 class="card-title">Option Greeks — Black-Scholes Model <span class="text-muted" style="font-weight:400;font-size:.85rem;margin-left:8px;">Sensitivity metrics for risk management</span></h3>
+            <div class="greek-grid">
+                <div class="greek-card"><div class="greek-symbol">Δ DELTA</div><div class="val-mono text-green" id="greek-call-delta" style="margin-top:8px;">Call: --</div><div class="val-mono text-red" id="greek-put-delta">Put: --</div><div class="text-muted" style="font-size:.8rem;margin-top:8px;">Price sensitivity</div></div>
+                <div class="greek-card"><div class="greek-symbol">Γ GAMMA</div><div class="val-mono" id="greek-gamma" style="margin-top:8px;">--</div><div class="text-muted" style="font-size:.8rem;margin-top:28px;">Delta change rate</div></div>
+                <div class="greek-card"><div class="greek-symbol">ν VEGA</div><div class="val-mono" id="greek-vega" style="margin-top:8px;">--</div><div class="text-muted" style="font-size:.8rem;margin-top:28px;">Vol sensitivity</div></div>
+                <div class="greek-card"><div class="greek-symbol">θ THETA</div><div class="val-mono text-green" id="greek-call-theta" style="margin-top:8px;">Call: --</div><div class="val-mono text-red" id="greek-put-theta">Put: --</div><div class="text-muted" style="font-size:.8rem;margin-top:8px;">Time decay/day</div></div>
+                <div class="greek-card"><div class="greek-symbol">ρ RHO</div><div class="val-mono text-green" id="greek-call-rho" style="margin-top:8px;">Call: --</div><div class="val-mono text-red" id="greek-put-rho">Put: --</div><div class="text-muted" style="font-size:.8rem;margin-top:8px;">Rate sensitivity</div></div>
+                <div class="greek-card"><div class="greek-symbol">IV IMPLIED</div><div class="val-mono" id="greek-iv" style="margin-top:8px;">--</div><div class="text-muted" style="font-size:.8rem;margin-top:28px;">Market implied vol</div></div>
+            </div>
+        </div>
+
+        <div class="grid-3">
+            <div class="card" style="text-align:center;"><h4 style="margin-bottom:10px;">Black-Scholes-Merton</h4><p class="text-muted" style="font-size:.85rem;">Closed-form solution for European options. Exact analytical price via normal distribution. Includes 5 Greeks: Δ Γ ν θ ρ.</p></div>
+            <div class="card" style="text-align:center;"><h4 style="margin-bottom:10px;">Monte Carlo Simulation</h4><p class="text-muted" style="font-size:.85rem;">Simulates 50,000 GBM price paths. Prices options via discounted expected payoff. Provides 95% confidence interval.</p></div>
+            <div class="card" style="text-align:center;"><h4 style="margin-bottom:10px;">Binomial Tree (CRR)</h4><p class="text-muted" style="font-size:.85rem;">Cox-Ross-Rubinstein lattice model. Uses 200-step tree for accuracy. Supports European & American exercise.</p></div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════
+         I: SYSTEM STATUS
+    ══════════════════════════════════════════ -->
+    <section id="sec-system" class="content-section">
+        <div class="section-header">
+            <h2>System Health Dashboard</h2>
+            <button class="btn-primary" id="btnRefreshStatus"><i class="fa-solid fa-rotate"></i> Refresh Status</button>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <h3 class="card-title">Module Status</h3>
+                <div id="module-status-list">
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text"></div>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px;">
+                <div class="card">
+                    <h3 class="card-title">Auth Info</h3>
+                    <div style="margin-bottom:8px;"><span class="text-muted">Authentication Enabled:</span> <span id="sys-auth-enabled"></span></div>
+                    <div style="margin-bottom:8px;"><span class="text-muted">Session Active:</span> <span id="sys-session-active"></span></div>
+                    <div><span class="text-muted">Version:</span> <span class="val-mono" id="sys-version">--</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- Load Main Script -->
+<script src="/script.js"></script>
+
+</body>
+</html>
